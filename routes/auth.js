@@ -8,31 +8,36 @@ const router = express.Router();
 // 🚗 Register Driver
 router.post('/register', async (req, res) => {
   const { driverName, vehicleNo, vehicleType, password } = req.body;
+  console.log(driverName, vehicleNo, vehicleType, password, "info");
 
   if (!driverName || !vehicleNo || !vehicleType || !password) {
     return res.status(400).json({ error: 'All fields are required' });
   }
 
   try {
-    const existing = await Driver.findOne({ vehicleNo });
-    if (existing) return res.status(400).json({ error: 'Vehicle already registered' });
+    // Case-insensitive vehicleNo check
+    const existing = await Driver.findOne({ vehicleNo: new RegExp(`^${vehicleNo}$`, 'i') });
+    if (existing) {
+      return res.status(400).json({ error: 'Vehicle already registered' });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const driver = new Driver({
       driverName,
       vehicleNo,
-      vehicleType, // ✅ Save vehicleType
+      vehicleType,
       password: hashedPassword,
     });
 
     await driver.save();
-
     res.status(201).json({ message: '✅ Driver registered successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
+    console.error('❌ Registration error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
+
 
 // 🔑 Login Driver
 router.post('/login', async (req, res) => {
@@ -79,5 +84,78 @@ router.delete('/delete/:vehicleNo', async (req, res) => {
     res.status(500).json({ error: 'Server error while deleting driver' });
   }
 });
+
+
+
+const Location = require('../models/Location'); // ✅ import the model
+
+
+
+//  send location 
+router.post('/sendLocation', async (req, res) => {
+  try {
+    const { latlong, time, vehicleType, vehicleNo, driverName } = req.body;
+
+    const newLocation = new Location({
+      latlong,
+      time,
+      vehicleType,
+      vehicleNo,
+      driverName,
+    });
+
+    await newLocation.save();
+
+    res.status(201).json({ message: '✅ Location saved successfully', newLocation });
+  } catch (error) {
+    console.error('❌ Error saving location:', error);
+    res.status(500).json({ error: 'Server error while saving location' });
+  }
+});
+
+
+// get all locations
+
+router.get('/getLocations', async (req, res) => {
+  try {
+    const locations = await Location.find().sort({ createdAt: -1 }).limit(100); // latest 100 entries
+    res.json(locations);
+  } catch (error) {
+    console.error('❌ Error fetching locations:', error);
+    res.status(500).json({ error: 'Failed to fetch locations' });
+  }
+});
+
+
+
+
+// 👇 GET unique drivers
+router.get('/getDrivers', async (req, res) => {
+  try {
+    const uniqueDrivers = await Location.aggregate([
+      {
+        $group: {
+          _id: {
+            vehicleNo: "$vehicleNo",
+            driverName: "$driverName"
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          vehicleNo: "$_id.vehicleNo",
+          driverName: "$_id.driverName"
+        }
+      }
+    ]);
+
+    res.json(uniqueDrivers);
+  } catch (error) {
+    console.error('❌ Error fetching unique drivers:', error);
+    res.status(500).json({ error: 'Failed to fetch unique drivers' });
+  }
+});
+
 
 module.exports = router;
