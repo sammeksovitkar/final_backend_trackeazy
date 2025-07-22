@@ -105,6 +105,9 @@ app.delete('/api/auth/delete/:vehicleNo', async (req, res) => {
 });
 
 // Start Server
-app.listen(port, () => {
-  console.log(`🚗 Server running at http://localhost:${port}`);
-});
+// app.listen(port, () => {
+//   console.log(`🚗 Server running at http://localhost:${port}`);
+// });
+
+// Export the app for Vercel
+module.exports = app;
