@@ -157,5 +157,24 @@ router.get('/getDrivers', async (req, res) => {
   }
 });
 
+// GET all lat/long data for a specific vehicle
+router.get('/getVehicleLocations/:vehicleNo', async (req, res) => {
+  const { vehicleNo } = req.params;
+
+  try {
+    const locations = await Location.find({ vehicleNo })
+      .sort({ createdAt: 1 }) // oldest to newest (for history)
+      .select('latlong time -_id'); // only return latlong and time
+
+    if (!locations || locations.length === 0) {
+      return res.status(404).json({ error: 'No location data found for this vehicle' });
+    }
+
+    res.json({ vehicleNo, totalPoints: locations.length, locations });
+  } catch (error) {
+    console.error('❌ Error fetching vehicle locations:', error);
+    res.status(500).json({ error: 'Server error while fetching vehicle locations' });
+  }
+});
 
 module.exports = router;
