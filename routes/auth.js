@@ -146,8 +146,13 @@ router.get('/getLocations', async (req, res) => {
 
 
 
-// 👇 GET unique drivers
-router.get('/getDrivers', async (req, res) => {
+const verifyAdmin = require('../verifyAdmin');
+
+
+
+
+// 👇 GET unique drivers with vehicle type
+router.get('/getDrivers', verifyAdmin, async (req, res) => {
   try {
     const uniqueDrivers = await Driver.aggregate([
       {
