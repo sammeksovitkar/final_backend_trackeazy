@@ -28,28 +28,27 @@ mongoose.connect(process.env.MONGO_URI, {
 
 // Routes
 app.use('/api/auth', authRoutes);
+const adminAuth = require('./routes/adminAuth');
 
 // Home Route
 app.get('/', (req, res) => {
   res.send('🚀 Driver Auth API Running');
 });
 
-// ✅ Delete driver by vehicleNo (admin can use)
-app.delete('/api/auth/delete/:vehicleNo', async (req, res) => {
+// Delete route (already exists, just wrap it with adminAuth)
+app.delete('/api/auth/delete/:vehicleNo', adminAuth, async (req, res) => {
   const { vehicleNo } = req.params;
-
   try {
     const deletedDriver = await Driver.findOneAndDelete({ vehicleNo });
-
     if (!deletedDriver) {
       return res.status(404).json({ error: 'Driver not found' });
     }
-
     res.json({ message: '🗑️ Driver deleted successfully', deletedDriver });
   } catch (error) {
     res.status(500).json({ error: 'Server error while deleting driver' });
   }
 });
+
 
 // Start Server
 app.listen(port, () => {
