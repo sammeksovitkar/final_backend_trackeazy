@@ -130,7 +130,7 @@ router.get('/getLocations', async (req, res) => {
 
 
 // 👇 GET unique drivers
-outer.get('/getDrivers', async (req, res) => {
+router.get('/getDrivers', async (req, res) => {
   try {
     const uniqueDrivers = await Driver.aggregate([
       {
