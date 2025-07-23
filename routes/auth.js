@@ -5,6 +5,23 @@ const Driver = require('../models/Driver');
 
 const router = express.Router();
 
+// Admin Login
+router.post('/admin/login', (req, res) => {
+  const { username, password } = req.body;
+
+  if (
+    username === process.env.ADMIN_USERNAME &&
+    password === process.env.ADMIN_PASSWORD
+  ) {
+    const token = jwt.sign({ role: 'admin' }, process.env.JWT_SECRET, {
+      expiresIn: '1d',
+    });
+    return res.json({ message: '✅ Admin logged in', token });
+  } else {
+    return res.status(401).json({ error: 'Invalid admin credentials' });
+  }
+});
+
 // 🚗 Register Driver
 router.post('/register', async (req, res) => {
   const { driverName, vehicleNo, vehicleType, password } = req.body;
