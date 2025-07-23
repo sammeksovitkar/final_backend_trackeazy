@@ -130,14 +130,15 @@ router.get('/getLocations', async (req, res) => {
 
 
 // 👇 GET unique drivers
-router.get('/getDrivers', async (req, res) => {
+outer.get('/getDrivers', async (req, res) => {
   try {
     const uniqueDrivers = await Driver.aggregate([
       {
         $group: {
           _id: {
             vehicleNo: "$vehicleNo",
-            driverName: "$driverName"
+            driverName: "$driverName",
+            vehicleType: "$vehicleType"
           }
         }
       },
@@ -145,7 +146,8 @@ router.get('/getDrivers', async (req, res) => {
         $project: {
           _id: 0,
           vehicleNo: "$_id.vehicleNo",
-          driverName: "$_id.driverName"
+          driverName: "$_id.driverName",
+          vehicleType: "$_id.vehicleType"
         }
       }
     ]);
