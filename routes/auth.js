@@ -160,7 +160,8 @@ router.get('/getDrivers', verifyAdmin, async (req, res) => {
           _id: {
             vehicleNo: "$vehicleNo",
             driverName: "$driverName",
-            vehicleType: "$vehicleType"
+            vehicleType: "$vehicleType",
+            status:"$status"
           }
         }
       },
@@ -169,7 +170,8 @@ router.get('/getDrivers', verifyAdmin, async (req, res) => {
           _id: 0,
           vehicleNo: "$_id.vehicleNo",
           driverName: "$_id.driverName",
-          vehicleType: "$_id.vehicleType"
+          vehicleType: "$_id.vehicleType",
+          status: "$_id.status"
         }
       }
     ]);
@@ -198,6 +200,32 @@ router.get('/getVehicleLocations/:vehicleNo', async (req, res) => {
   } catch (error) {
     console.error('❌ Error fetching vehicle locations:', error);
     res.status(500).json({ error: 'Server error while fetching vehicle locations' });
+  }
+});
+
+
+// POST /api/driver/update-status
+router.post('/update-status', async (req, res) => {
+  const { vehicleNo, statusFlag } = req.body;
+
+  if (!vehicleNo || typeof statusFlag !== 'number') {
+    return res.status(400).json({ message: 'vehicleNo and statusFlag (0 or 1) are required' });
+  }
+
+  try {
+    const driver = await Driver.findOneAndUpdate(
+      { vehicleNo },
+      { $set: { status: statusFlag } },
+      { new: true }
+    );
+
+    if (!driver) {
+      return res.status(404).json({ message: 'Driver not found' });
+    }
+
+    res.json({ message: 'Status updated successfully', driver });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
