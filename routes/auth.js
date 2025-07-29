@@ -337,6 +337,28 @@ router.post('/edit-trip', async (req, res) => {
     res.status(500).json({ error: 'Server error while editing trip' });
   }
 });
+router.get('/getDriver/:vehicleNo', async (req, res) => {
+  const { vehicleNo } = req.params;
 
+  try {
+    const driver = await Driver.findOne({ vehicleNo });
+
+    if (!driver) {
+      return res.status(404).json({ error: 'Driver not found' });
+    }
+
+    const { driverName, vehicleType, allocatedTrip } = driver;
+
+    res.json({
+      vehicleNo,
+      driverName,
+      vehicleType,
+      ...allocatedTrip // this spreads: source, destination, start, end, time
+    });
+  } catch (error) {
+    console.error('❌ Error fetching driver info:', error);
+    res.status(500).json({ error: 'Server error while fetching driver' });
+  }
+});
 
 module.exports = router;
