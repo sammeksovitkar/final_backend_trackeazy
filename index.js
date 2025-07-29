@@ -49,8 +49,9 @@ app.delete('/api/auth/delete/:vehicleNo', adminAuth, async (req, res) => {
   }
 });
 
+module.exports = app; // Needed for Vercel
 
 // Start Server
-app.listen(port, () => {
-  console.log(`🚗 Server running at http://localhost:${port}`);
-});
+// app.listen(port, () => {
+//   console.log(`🚗 Server running at http://localhost:${port}`);
+// });
