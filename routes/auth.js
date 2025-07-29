@@ -274,91 +274,101 @@ router.post('/update-status', async (req, res) => {
 router.post('/assign-trip', async (req, res) => {
   const { vehicleNo, source, destination, start, end, time } = req.body;
 
-  if (!vehicleNo || !source || !destination || !start || !end || typeof time !== 'number') {
-    return res.status(400).json({ error: 'All trip fields are required' });
-  }
+  if (!vehicleNo) return res.status(400).json({ error: 'vehicleNo is required' });
+
+  const updateFields = {};
+
+  if (source) updateFields['allocatedTrip.source'] = source;
+  if (destination) updateFields['allocatedTrip.destination'] = destination;
+  if (start) updateFields['allocatedTrip.start'] = start;
+  if (end) updateFields['allocatedTrip.end'] = end;
+
+  // ✅ Always set time, even if others are empty
+  if (typeof time === 'number') updateFields['allocatedTrip.time'] = time;
 
   try {
-    const driver = await Driver.findOneAndUpdate(
-      { vehicleNo },
-      {
-        $set: {
-          allocatedTrip: {
-            source,
-            destination,
-            start,
-            end,
-            time
-          }
-        }
-      },
-      { new: true }
-    );
-
-    if (!driver) {
-      return res.status(404).json({ error: 'Driver not found' });
-    }
-
-    res.json({ message: '🚚 Trip assigned successfully', driver });
-  } catch (error) {
-    console.error('❌ Error assigning trip:', error);
-    res.status(500).json({ error: 'Server error while assigning trip' });
-  }
-});
-// PUT /api/driver/edit-trip
-router.post('/edit-trip', async (req, res) => {
-  const { vehicleNo, source, destination, start, end, time } = req.body;
-
-  if (!vehicleNo) {
-    return res.status(400).json({ error: 'vehicleNo is required' });
-  }
-
-  try {
-    const updateFields = {};
-    if (source) updateFields['allocatedTrip.source'] = source;
-    if (destination) updateFields['allocatedTrip.destination'] = destination;
-    if (start) updateFields['allocatedTrip.start'] = start;
-    if (end) updateFields['allocatedTrip.end'] = end;
-    if (typeof time === 'number') updateFields['allocatedTrip.time'] = time;
-
     const driver = await Driver.findOneAndUpdate(
       { vehicleNo },
       { $set: updateFields },
       { new: true }
     );
 
-    if (!driver) {
+    if (!driver) return res.status(404).json({ error: 'Driver not found' });
+
+    res.json({ message: 'Trip data updated', driver });
+  } catch (err) {
+    console.error('Error updating trip:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PUT /api/driver/edit-trip
+// 🚀 Update or assign trip for a driver
+router.post('/update-trip', async (req, res) => {
+  const { vehicleNo, source, destination, start, end, time } = req.body;
+
+  // Validate
+  if (!vehicleNo) {
+    return res.status(400).json({ error: 'vehicleNo is required' });
+  }
+
+  const updateFields = {};
+
+  // ✅ Only set fields that are provided
+  if (source) updateFields['allocatedTrip.source'] = source;
+  if (destination) updateFields['allocatedTrip.destination'] = destination;
+  if (start) updateFields['allocatedTrip.start'] = start;
+  if (end) updateFields['allocatedTrip.end'] = end;
+  if (typeof time === 'number') updateFields['allocatedTrip.time'] = time;
+
+  try {
+    const updatedDriver = await Driver.findOneAndUpdate(
+      { vehicleNo },
+      { $set: updateFields },
+      { new: true }
+    );
+
+    if (!updatedDriver) {
       return res.status(404).json({ error: 'Driver not found' });
     }
 
-    res.json({ message: '✏️ Trip updated successfully', driver });
-  } catch (error) {
-    console.error('❌ Error editing trip:', error);
-    res.status(500).json({ error: 'Server error while editing trip' });
+    res.json({
+      message: '✅ Trip details updated successfully',
+      driver: updatedDriver
+    });
+  } catch (err) {
+    console.error('❌ Error updating trip:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// GET /api/driver/getDriver/:vehicleNo
 router.get('/getDriver/:vehicleNo', async (req, res) => {
   const { vehicleNo } = req.params;
 
   try {
     const driver = await Driver.findOne({ vehicleNo });
 
-    if (!driver) {
-      return res.status(404).json({ error: 'Driver not found' });
-    }
+    if (!driver) return res.status(404).json({ error: 'Driver not found' });
 
-    const { driverName, vehicleType, allocatedTrip } = driver;
+    const { driverName, vehicleType, allocatedTrip = {} } = driver;
 
     res.json({
       vehicleNo,
       driverName,
       vehicleType,
-      ...allocatedTrip // this spreads: source, destination, start, end, time
+      source: allocatedTrip.source || {},
+      destination: allocatedTrip.destination || {},
+      start: allocatedTrip.start || {},
+      end: allocatedTrip.end || {},
+      time: typeof allocatedTrip.time === 'number' ? allocatedTrip.time : null
     });
-  } catch (error) {
-    console.error('❌ Error fetching driver info:', error);
-    res.status(500).json({ error: 'Server error while fetching driver' });
+  } catch (err) {
+    console.error('Error getting driver:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+
 
 module.exports = router;
